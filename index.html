@@ -322,18 +322,11 @@
     }
 
     // Custom form handling (simulated)
-    document.getElementById('customForm').addEventListener('submit', function(e){
-      e.preventDefault();
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const details = document.getElementById('details').value.trim();
-      if(!name || !email || !details){ alert('Lengkapi semua field.'); return; }
-      // Simulate sending...
-      document.getElementById('formMsg').style.display = 'block';
-      document.getElementById('formMsg').textContent = 'Terima kasih! Permintaan custom Anda telah kami terima. Kami akan menghubungi via email.';
-      this.reset();
-      setTimeout(()=>{ document.getElementById('formMsg').style.display='none' }, 6000);
-    });
+    <form id="customForm"
+      action="https://formsubmit.co/EMAIL_KAMU"
+      method="POST"
+      style="margin-top:12px;display:grid;gap:12px;max-width:720px">
+
 
     function resetForm(){ document.getElementById('customForm').reset(); }
 
