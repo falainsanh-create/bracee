@@ -345,18 +345,20 @@
       }
     }
 
-    
+
+
+
+    <script>
+  function resetForm(){ document.getElementById('customForm').reset(); }
+
+  // Accessibility: close modal with ESC
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeQuickView(); });
+
+  // Placeholder: replace TikTok URL with actual shop link
+  // document.getElementById('tiktokLink').href = 'https://www.tiktok.com/@yourshop';
 </script>
+</body>
+</html>
 
-
-
-    function resetForm(){ document.getElementById('customForm').reset(); }
-
-    // Accessibility: close modal with ESC
-    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeQuickView(); });
-
-    // Placeholder: replace TikTok URL with actual shop link
-    // document.getElementById('tiktokLink').href = 'https://www.tiktok.com/@yourshop';
-  </script>
 </body>
 </html>
