@@ -49,27 +49,206 @@
   </style>
 </head>
 <!-- EMAILJS -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
-  emailjs.init("E3v-JdrQGZ0CZJf7g"); // PUBLIC KEY kamu
+/* ========== CONFIG ========== */
+const PUBLIC_KEY = "OhwjKUkw0EtQC9MUI";
+const SERVICE_ID = "service_l89ekg4";
+const TEMPLATE_CUSTOM = "template_vsknf23"; // custom form (tetap dipakai)
+const TEMPLATE_CART = "template_skyofzo";   // invoice keranjang
+const CC_EMAIL = "braceeco@gmail.com";
+/* ============================ */
 
-  function sendMail(){
-    const params = {
-      name: document.getElementById("name").value,
-      email: document.getElementById("email").value,
-      details: document.getElementById("details").value
-    };
+emailjs.init(PUBLIC_KEY);
 
-    emailjs.send("service_w7rkjom","template_tfc1cko", params)
+/* -------------------------
+   Cart logic & UI helpers
+   ------------------------- */
+const cart = []; // array of {name, price, qty}
+const tiktokUrl = "https://www.tiktok.com/@bracee.co?is_from_webapp=1&sender_device=pc";
+document.getElementById('tiktokLink').href = tiktokUrl;
+document.getElementById('year').textContent = new Date().getFullYear();
+
+function formatRupiah(num){
+  if(!num && num !== 0) return '0';
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+function escapeHtml(str){
+  if(!str && str !== 0) return '';
+  return String(str).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+}
+
+/* addToCart: support qty increment if same item */
+function addToCart(name, price){
+  const existing = cart.find(c => c.name === name);
+  if(existing){
+    existing.qty = (existing.qty || 1) + 1;
+  } else {
+    cart.push({name, price, qty: 1});
+  }
+  updateCart();
+  alert(name + " ditambahkan ke keranjang.");
+}
+
+/* update cart counter */
+function updateCart(){
+  const count = cart.reduce((s,i)=> s + (i.qty || 1), 0);
+  document.getElementById('cartCount').textContent = 'Keranjang: ' + count;
+}
+
+/* quick checkout: open modal (UX option A already chosen) */
+function checkout(){
+  openCheckoutModal();
+}
+
+/* Quickview modal behavior (keperluan tombol Lihat) */
+function openQuickView(title, price, desc, img){
+  document.getElementById('qTitle').textContent = title;
+  document.getElementById('qPrice').textContent = price;
+  document.getElementById('qDesc').textContent = desc;
+  document.getElementById('qImg').src = img;
+  document.getElementById('quickModal').style.display = 'flex';
+  // qAdd should add an item with numeric price if price is numeric
+  document.getElementById('qAdd').onclick = ()=>{ addToCart(title, (typeof price === 'number' ? price : parseInt(String(price).replace(/\D/g,'')) || 0)); closeQuickView(); };
+}
+function closeQuickView(){ document.getElementById('quickModal').style.display = 'none'; }
+
+/* -------------------------
+   Checkout modal functions
+   ------------------------- */
+function openCheckoutModal(){
+  if(!cart || cart.length === 0){
+    alert('Keranjang kosong. Tambahkan produk terlebih dahulu.');
+    return;
+  }
+  const wrap = document.getElementById('checkoutSummary');
+  wrap.innerHTML = '';
+  let total = 0;
+  cart.forEach((it, idx) => {
+    const line = document.createElement('div');
+    line.style.padding = '8px 6px';
+    line.style.borderBottom = '1px solid #f1f5f9';
+    const linePrice = (it.price || 0) * (it.qty || 1);
+    line.innerHTML = `<div style="display:flex;justify-content:space-between"><div><strong>${idx+1}. ${escapeHtml(it.name)}</strong><div class="muted" style="font-size:13px">Qty: ${it.qty || 1}</div></div><div style="text-align:right"><div style="font-weight:800">Rp ${formatRupiah(linePrice)}</div></div></div>`;
+    wrap.appendChild(line);
+    total += linePrice;
+  });
+  const totDiv = document.createElement('div');
+  totDiv.style.padding = '10px';
+  totDiv.style.fontWeight = '800';
+  totDiv.style.textAlign = 'right';
+  totDiv.textContent = 'Total: Rp ' + formatRupiah(total);
+  wrap.appendChild(totDiv);
+
+  document.getElementById('checkoutModal').style.display = 'flex';
+}
+function closeCheckoutModal(){
+  document.getElementById('checkoutModal').style.display = 'none';
+}
+
+/* -------------------------
+   Send invoice (cart) via EmailJS
+   ------------------------- */
+function sendInvoice(){
+  const name = document.getElementById('buyerName').value.trim();
+  const email = document.getElementById('buyerEmail').value.trim();
+  const wa = document.getElementById('buyerWA').value.trim();
+
+  if(!name || !email || !wa){
+    alert('Lengkapi nama, email, dan nomor WA.');
+    return;
+  }
+
+  // build details string
+  let details = 'Daftar produk:\n';
+  let total = 0;
+  cart.forEach((it, idx) => {
+    const qty = it.qty || 1;
+    const linePrice = (it.price || 0) * qty;
+    details += (idx+1) + '. ' + it.name + ' — Qty: ' + qty + ' — Rp ' + formatRupiah(linePrice) + '\n';
+    total += linePrice;
+  });
+  details += '\nTotal: Rp ' + formatRupiah(total);
+  details += '\n\nNomor WA pembeli: ' + wa;
+
+  // template variables: make sure template_skyofzo uses {{name}}, {{email}}, {{wa}}, {{details}}
+  const templateParams = {
+    name: name,
+    email: email,
+    wa: wa,
+    details: details,
+    cc_email: CC_EMAIL // include if your template has {{cc_email}} to show CC in body; otherwise used for sending logic
+  };
+
+  // disable submit UI
+  const submitBtn = document.querySelector('#checkoutForm button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Mengirim...';
+
+  emailjs.send(SERVICE_ID, TEMPLATE_CART, templateParams)
+    .then((res) => {
+      document.getElementById('checkoutMsg').style.display = 'block';
+      document.getElementById('checkoutMsg').textContent = 'Invoice terkirim! Cek email Anda (dan spam). Kami juga menerima salinan.';
+      // clear cart
+      cart.length = 0;
+      updateCart();
+      // reset form UI quickly
+      setTimeout(()=>{
+        document.getElementById('checkoutForm').reset();
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Kirim Invoice & Email';
+        closeCheckoutModal();
+      }, 1200);
+    })
+    .catch((err) => {
+      console.error(err);
+      alert('Gagal mengirim invoice. Coba lagi atau hubungi admin via WA.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Kirim Invoice & Email';
+    });
+}
+
+/* -------------------------
+   Existing custom form sendMail (custom orders)
+   - uses TEMPLATE_CUSTOM (template_vsknf23)
+   - expects template variables: {{name}}, {{email}}, {{details}}
+   ------------------------- */
+function sendMail(){
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const details = document.getElementById("details").value.trim();
+  if(!name || !email || !details){ alert('Lengkapi semua field.'); return; }
+
+  const params = { name, email, details, cc_email: CC_EMAIL };
+
+  const btn = document.querySelector('#customForm button[type="submit"]');
+  if(btn) { btn.disabled = true; btn.textContent = 'Mengirim...'; }
+
+  emailjs.send(SERVICE_ID, TEMPLATE_CUSTOM, params)
     .then(() => {
-        alert("Pesanan kamu sudah terkirim! Kami akan hubungi lewat email.");
-        document.getElementById("customForm").reset();
+      alert("Permintaan custom berhasil dikirim! Kami akan menghubungi via email.");
+      document.getElementById("customForm").reset();
+      if(btn){ btn.disabled = false; btn.textContent = 'Kirim Permintaan'; }
     })
     .catch((error) => {
-        alert("Pengiriman gagal. Coba lagi.");
-        console.log(error);
+      console.error(error);
+      alert("Pengiriman gagal. Coba lagi.");
+      if(btn){ btn.disabled = false; btn.textContent = 'Kirim Permintaan'; }
     });
-  }
+}
+
+/* -------------------------
+   Utility: resetForm (keperluan tombol Reset)
+   ------------------------- */
+function resetForm(){ document.getElementById('customForm').reset(); }
+
+/* -------------------------
+   Accessibility & misc
+   ------------------------- */
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ closeQuickView(); closeCheckoutModal(); } });
+
+// End of script
 </script>
 
 <body>
@@ -91,6 +270,42 @@
       </nav>
     </div>
   </header>
+<!-- CHECKOUT MODAL -->
+<div id="checkoutModal" style="display:none;position:fixed;inset:0;background:rgba(2,6,23,0.6);align-items:center;justify-content:center;padding:20px;z-index:120">
+  <div style="width:100%;max-width:520px;background:#fff;border-radius:12px;padding:18px;box-shadow:0 12px 40px rgba(2,6,23,0.4);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:800">Checkout — Ringkasan Pesanan</div>
+      <button onclick="closeCheckoutModal()" class="btn ghost" style="padding:6px 10px">Tutup</button>
+    </div>
+
+    <div id="checkoutSummary" style="max-height:220px;overflow:auto;padding:8px;border-radius:8px;border:1px solid #eef2f6;background:#fbfdff;margin-bottom:12px"></div>
+
+    <form id="checkoutForm" onsubmit="sendInvoice(); return false;" style="display:grid;gap:10px">
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">
+          <label for="buyerName">Nama</label>
+          <input id="buyerName" required placeholder="Nama lengkap">
+        </div>
+        <div style="width:130px">
+          <label for="buyerWA">WA</label>
+          <input id="buyerWA" required placeholder="08xx..." >
+        </div>
+      </div>
+
+      <div>
+        <label for="buyerEmail">Email</label>
+        <input id="buyerEmail" type="email" required placeholder="email@contoh.com">
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <button type="submit" class="btn">Kirim Invoice & Email</button>
+        <button type="button" class="btn ghost" onclick="closeCheckoutModal()">Batal</button>
+      </div>
+
+      <div id="checkoutMsg" style="display:none;padding:8px;border-radius:8px;background:#ecfdf5;color:#065f46;margin-top:8px"></div>
+    </form>
+  </div>
+</div>
 
   <main class="container">
     <!-- HERO -->
