@@ -504,56 +504,6 @@ document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ closeQuickVi
     </div>
   </div>
 
-  <script>
-    // Basic interactivity: cart counter, quickview, forms
-    const cart = [];
-    const tiktokUrl = "#"; // Replace with real TikTok Shop URL
-    document.getElementById('tiktokLink').href = tiktokUrl;
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    function addToCart(name, price){
-      cart.push({name, price});
-      updateCart();
-      alert(name + " ditambahkan ke keranjang.");
-    }
-    function updateCart(){
-      document.getElementById('cartCount').textContent = 'Keranjang: ' + cart.length;
-    }
-    function checkout(){
-      if(cart.length === 0){ alert('Keranjang kosong. Tambahkan produk terlebih dahulu.'); return; }
-      let total = cart.reduce((s,i)=>s + (i.price || 0),0);
-      alert('Total sementara: Rp' + total.toLocaleString() + '\\nLanjutkan checkout melalui TikTok Shop atau hubungi kami untuk pembayaran manual.');
-    }
-
-    function openQuickView(title, price, desc, img){
-      document.getElementById('qTitle').textContent = title;
-      document.getElementById('qPrice').textContent = price;
-      document.getElementById('qDesc').textContent = desc;
-      document.getElementById('qImg').src = img;
-      document.getElementById('quickModal').style.display = 'flex';
-      document.getElementById('qAdd').onclick = ()=>{ addToCart(title, typeof price === 'number' ? price : 0); closeQuickView(); };
-    }
-    function closeQuickView(){ document.getElementById('quickModal').style.display = 'none'; }
-
-    // Scrolling helper
-    function scrollToSection(id){
-      const el = document.getElementById(id);
-      if(!el) return window.scrollTo({top:0,behavior:'smooth'});
-      el.scrollIntoView({behavior:'smooth',block:'start'});
-    }
-
-    // Workshop reservation (quick)
- 
-
-    <script>
-  function resetForm(){ document.getElementById('customForm').reset(); }
-
-  // Accessibility: close modal with ESC
-  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeQuickView(); });
-
-  // Placeholder: replace TikTok URL with actual shop link
-  // document.getElementById('tiktokLink').href = 'https://www.tiktok.com/@yourshop';
-</script>
 </body>
 </html>
 
