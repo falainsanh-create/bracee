@@ -542,18 +542,7 @@ document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape'){ closeQuickVi
     }
 
     // Workshop reservation (quick)
-    function reserve(title){
-      const name = prompt('Masukkan nama untuk pendaftaran workshop:');
-      const email = prompt('Masukkan email:');
-      if(name && email){
-        alert('Terima kasih, ' + name + '. Pendaftaran untuk "' + title + '" telah kami catat. Kami akan mengirim konfirmasi ke ' + email + '.');
-      } else {
-        alert('Pendaftaran dibatalkan (nama/email tidak diisi).');
-      }
-    }
-
-
-
+  <button class="btn" onclick="window.open('https://forms.gle/fRDEpQUr91cRSUpK6','_blank')">Daftar</button>
 
     <script>
   function resetForm(){ document.getElementById('customForm').reset(); }
